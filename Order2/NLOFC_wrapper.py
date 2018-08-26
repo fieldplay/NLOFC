@@ -1,8 +1,8 @@
 __doc__ = """
-Python wrapper for NLOFC_Spectra_order2.c
+Python wrapper for NLOFC_spectra_order2.c
 
 Note: You must compile the C shared library
-       gcc -O3 -shared -o NLOFC_Spectra_order2.so NLOFC_Spectra_order2.c -lm -fopenmp -fPIC
+       gcc -O3 -shared -o NLOFC_spectra_order2.so NLOFC_spectra_order2.c -lm -fopenmp -fPIC
 """
 import os
 import ctypes
@@ -21,6 +21,7 @@ class Molecule(Structure):
     Molecule structure ctypes
     """
     _fields_ = [
+        ('nDIM', c_int),
         ('energies', POINTER(c_double)),
         ('gamma', POINTER(c_double)),
         ('mu', POINTER(c_double)),
@@ -40,16 +41,17 @@ class Parameters(Structure):
         ('comb_lw', c_double),
         ('delta_freq', c_double),
         ('N_terms', c_int),
-        ('frequency', POINTER(c_double))
+        ('frequency', POINTER(c_double)),
+        ('N_freq', c_int)
     ]
 
 try:
-    lib = ctypes.cdll.LoadLibrary(os.getcwd() + "/eval_pol2_full.so")
+    lib = ctypes.cdll.LoadLibrary(os.getcwd() + "/NLOFC_spectra_order2.so")
 except OSError:
     raise NotImplementedError(
         """
         The library is absent. You must compile the C shared library using the commands:
-        gcc -O3 -shared -o NLOFC_Spectra_order2.so NLOFC_Spectra_order2.c -lm -fopenmp -fPIC
+        gcc -O3 -shared -o NLOFC_spectra_order2.so NLOFC_spectra_order2.c -lm -fopenmp -fPIC
         """
     )
 
