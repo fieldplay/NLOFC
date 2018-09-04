@@ -24,7 +24,6 @@ class Molecule(Structure):
         ('nDIM', c_int),
         ('energies', POINTER(c_double)),
         ('gamma', POINTER(c_double)),
-        ('mu', POINTER(c_double)),
         ('pol2', POINTER(c_complex))
     ]
 
@@ -42,7 +41,9 @@ class Parameters(Structure):
         ('delta_freq', c_double),
         ('N_terms', c_int),
         ('frequency', POINTER(c_double)),
-        ('N_freq', c_int)
+        ('N_freq', c_int),
+        ('chi_iterator', POINTER(c_double)),
+        ('N_iter', c_int)
     ]
 
 try:
