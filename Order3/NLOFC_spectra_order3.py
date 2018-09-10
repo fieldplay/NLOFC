@@ -28,10 +28,11 @@ class NonLinearResponse3rdOrder:
         self.field1 = None
         self.field2 = None
 
-        self.chi_iterator = np.zeros((6, 6))
+        self.chi_iterator = np.zeros((12, 6))
         self.iter = 0
         mods = list(product(*(3 * [[self.omega_M1, self.omega_M2]])))
         del mods[2:]
+        # del mods[-1]
         del mods[0]
 
         print(mods)
@@ -68,10 +69,10 @@ class NonLinearResponse3rdOrder:
         self.field_freq1 = self.field_freq1.flatten()
         self.field_freq2 = self.field_freq2.flatten()
 
-        self.env1 = np.cos((self.field_freq1 - w0_field1) * np.pi / (self.field_freq1.max() - self.field_freq1.min()))**2
-        # self.env1 = np.sin(.0005 * (self.field_freq1 - w0_field1)) * np.cos((self.field_freq1 - w0_field1) * np.pi / (self.field_freq1.max() - self.field_freq1.min()))**2
+        # self.env1 = np.cos((self.field_freq1 - w0_field1) * np.pi / (self.field_freq1.max() - self.field_freq1.min()))**2
+        self.env1 = np.sin(.00005 * (self.field_freq1 - w0_field1)) * np.cos((self.field_freq1 - w0_field1) * np.pi / (self.field_freq1.max() - self.field_freq1.min()))**2
         self.env2 = np.cos((self.field_freq2 - w0_field2) * np.pi / (self.field_freq2.max() - self.field_freq2.min()))**2
-        # self.env2 = np.sin(.0005 * (self.field_freq1 - w0_field1)) * np.cos((self.field_freq2 - w0_field2) * np.pi / (self.field_freq2.max() - self.field_freq2.min()))**2
+        # self.env2 = np.sin(.000005 * (self.field_freq1 - w0_field1)) * np.cos((self.field_freq2 - w0_field2) * np.pi / (self.field_freq2.max() - self.field_freq2.min()))**2
 
         # self.env1 = np.ones_like(self.field_freq1)
         # self.env2 = np.ones_like(self.field_freq1)
@@ -136,7 +137,7 @@ if __name__ == "__main__":
     np.fill_diagonal(gamma_decay, 0.0)  # Diagonal elements zero; no decay to self
     gamma_decay = np.tril(gamma_decay)  # Relaxation only to lower energy states
     # dephasing rates (T_ij = T_ji for dephasing)
-    gamma_dephasing = np.ones((4, 4)) * 1e6  # All electronic dephasing rates are 10 THz (100 fs inverse)
+    gamma_dephasing = np.ones((4, 4)) * 1.6e6  # All electronic dephasing rates are 10 THz (100 fs inverse)
     np.fill_diagonal(gamma_dephasing, 0.0)
     gamma_dephasing[0, 1] = 5.88e4  # All vibrational dephasing rates are 0.59 THz (1.7 ps inverse)
     gamma_dephasing[1, 0] = 5.88e4
@@ -160,13 +161,13 @@ if __name__ == "__main__":
         gamma=gamma,
         mu=mu,
         central_freq=energies_A[0],
-        comb_size=7500,
+        comb_size=5000,
         resolution_size=11,
-        omega_M1=7,
-        omega_M2=13,
-        comb_lw=1e-8,
-        delta_freq=20,
-        N_terms=5
+        omega_M1=70,
+        omega_M2=130,
+        comb_lw=1e-12,
+        delta_freq=200,
+        N_terms=3
     )
 
     System = NonLinearResponse3rdOrder(**parameters)
@@ -176,11 +177,10 @@ if __name__ == "__main__":
     axes[0].set_title("Real part of $3^{rd}$ order non-linear response")
     axes[1].set_title("Imaginary part of $3^{rd}$ order non-linear response")
 
-    axes[0].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol3.real, 'k')
-    axes[1].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol3.imag, 'k')
     axes_field = axes[0].twinx()
-    axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'r', linewidth=2.)
-    axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'b', linewidth=2.)
+    # axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'r', alpha=.5)
+    # axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'b', alpha=.5)
+    axes[0].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol3.real, 'k')
 
     axes[0].get_xaxis().set_tick_params(which='both', direction='in', width=1)
     axes[0].get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='k', labelsize='large')
@@ -198,8 +198,14 @@ if __name__ == "__main__":
     axes_field = axes[1].twinx()
     axes_field.set_ylabel("Electric field $E(\\omega)$ (arb. units)")
 
-    axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'r', linewidth=2.)
-    axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'b', linewidth=2.)
+    # axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'r', linewidth=.5)
+    # axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'b', linewidth=.5)
+    axes[1].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol3.imag, 'k')
+
+    # real_max = max(np.abs(System.pol3.real).max(), np.abs(System1.pol2.real).max())
+    # imag_max = max(np.abs(System.pol3.imag).max(), np.abs(System1.pol2.imag).max())
+    axes[0].set_ylim(-1.1 * np.abs(System.pol3.real).max(), 1.1 * np.abs(System.pol3.real).max())
+    axes[1].set_ylim(-1.1 * np.abs(System.pol3.imag).max(), 1.1 * np.abs(System.pol3.imag).max())
 
     axes[1].get_xaxis().set_tick_params(which='both', direction='in', width=1, labelrotation=0, labelsize='large')
     axes[1].get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='r', labelsize='large')
