@@ -23,6 +23,8 @@ typedef struct parameters{
     int N_freq;
     double* chi_iterator;
     int N_iter;
+    double* field_env1;
+    double* field_env2;
 } parameters;
 
 void print_double_mat(double *A, int nDIM)
@@ -42,7 +44,7 @@ void print_double_mat(double *A, int nDIM)
 	printf("\n\n");
 }
 
-void pol2_XY(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign)
+void pol2_XY(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign, int iter_indx)
 {
     int m_p0 = (crealf(wg_1) - M_field_p)/params->delta_freq;
 
@@ -64,12 +66,12 @@ void pol2_XY(molecule* mol, parameters* params, const double M_field_p, const do
                 }
             }
 
-            mol->pol2[out_i] += result*sign*I/(omega - wg_2);
+            mol->pol2[iter_indx*params->N_freq + out_i] += result*sign/(omega - wg_2);
         }
 
 }
 
-void pol2_XZ(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign)
+void pol2_XZ(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign, int iter_indx)
 {
     int m_p0 = (crealf(wg_1) - M_field_p)/params->delta_freq;
 
@@ -91,12 +93,12 @@ void pol2_XZ(molecule* mol, parameters* params, const double M_field_p, const do
                 }
             }
 
-            mol->pol2[out_i] += result*sign*I/(omega - wg_2);
+            mol->pol2[iter_indx*params->N_freq + out_i] += result*sign/(omega - wg_2);
         }
 
 }
 
-void pol2_YZstar(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign)
+void pol2_YZstar(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign, int iter_indx)
 {
     #pragma omp parallel for
     for(int out_i = 0; out_i < params->N_freq; out_i++)
@@ -117,16 +119,21 @@ void pol2_YZstar(molecule* mol, parameters* params, const double M_field_p, cons
                 }
             }
 
-            mol->pol2[out_i] += result*sign*I/(omega - wg_2);
+            mol->pol2[iter_indx*params->N_freq + out_i] += result*sign/(omega - wg_2);
         }
 
 }
 
-void pol2(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign)
+void pol2(molecule* mol, parameters* params, const double M_field_p, const double M_field_q, const cmplx wg_2, const cmplx wg_1, int sign, int iter_indx)
 {
-    pol2_XY(mol, params, M_field_p, M_field_q, wg_2, wg_1, sign);
-    pol2_XZ(mol, params, M_field_p, M_field_q, wg_2, wg_1, sign);
-    pol2_YZstar(mol, params, M_field_p, M_field_q, wg_2, wg_1, sign);
+    pol2_XY(mol, params, M_field_p, M_field_q, wg_2, wg_1, sign, iter_indx);
+    pol2_XZ(mol, params, M_field_p, M_field_q, wg_2, wg_1, sign, iter_indx);
+    pol2_YZstar(mol, params, M_field_p, M_field_q, wg_2, wg_1, sign, iter_indx);
+
+    for(int out_i = 0; out_i < params->N_freq; out_i++)
+        {
+            mol->pol2[iter_indx*params->N_freq + out_i] *= params->field_env1[out_i] * params->field_env2[out_i];
+        }
 }
 
 //===========================================================================//
@@ -153,16 +160,9 @@ void calculate_pol2_total(molecule* mol, parameters* params)
         wg_mn = mol->energies[m] - mol->energies[n] + I * mol->gamma[m * mol->nDIM + n];
         wg_nm = mol->energies[n] - mol->energies[m] + I * mol->gamma[n * mol->nDIM + m];
 
-//        printf("%3.2lf %3.2lf %d %d \n", M_field_p, M_field_q, m, n);
-//        printf("(%5.1lf, %5.1lf) ", creal(wg_ml), cimag(wg_ml));
-//        printf("(%5.1lf, %5.1lf) ", creal(wg_nl), cimag(wg_nl));
-//        printf("(%5.1lf, %5.1lf) ", creal(wg_mn), cimag(wg_mn));
-//        printf("(%5.1lf, %5.1lf) ", creal(wg_nm), cimag(wg_nm));
-//        printf("\n");
-
-        pol2(mol, params, M_field_p, M_field_q, conj(wg_nl), conj(wg_ml), 1);
-        pol2(mol, params, M_field_p, M_field_q, conj(wg_mn), -wg_nl, -1);
-        pol2(mol, params, M_field_p, M_field_q, -wg_nm, conj(wg_ml), -1);
-        pol2(mol, params, M_field_p, M_field_q, -wg_ml, -wg_nl, 1);
+        pol2(mol, params, M_field_p, M_field_q, conj(wg_nl), conj(wg_ml), 1, i);
+        pol2(mol, params, M_field_p, M_field_q, conj(wg_mn), -wg_nl, -1, i);
+        pol2(mol, params, M_field_p, M_field_q, -wg_nm, conj(wg_ml), -1, i);
+        pol2(mol, params, M_field_p, M_field_q, -wg_ml, -wg_nl, 1, i);
     }
 }

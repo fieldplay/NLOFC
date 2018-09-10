@@ -1,8 +1,8 @@
 __doc__ = """
-Python wrapper for NLOFC_spectra_order2.c
+Python wrapper for NLOFC_spectra_order3.c
 
 Note: You must compile the C shared library
-       gcc -O3 -shared -o NLOFC_spectra_order2.so NLOFC_spectra_order2.c -lm -fopenmp -fPIC
+       gcc -O3 -shared -o NLOFC_spectra_order3.so NLOFC_spectra_order3.c -lm -fopenmp -fPIC
 """
 import os
 import ctypes
@@ -24,7 +24,7 @@ class Molecule(Structure):
         ('nDIM', c_int),
         ('energies', POINTER(c_double)),
         ('gamma', POINTER(c_double)),
-        ('pol2', POINTER(c_complex))
+        ('pol3', POINTER(c_complex))
     ]
 
 
@@ -35,8 +35,6 @@ class Parameters(Structure):
     _fields_ = [
         ('central_freq', c_double),
         ('comb_size', c_int),
-        ('omega_M1', c_double),
-        ('omega_M2', c_double),
         ('comb_lw', c_double),
         ('delta_freq', c_double),
         ('N_terms', c_int),
@@ -49,30 +47,30 @@ class Parameters(Structure):
     ]
 
 try:
-    lib = ctypes.cdll.LoadLibrary(os.getcwd() + "/NLOFC_spectra_order2.so")
+    lib = ctypes.cdll.LoadLibrary(os.getcwd() + "/NLOFC_spectra_order3.so")
 except OSError:
     raise NotImplementedError(
         """
         The library is absent. You must compile the C shared library using the commands:
-        gcc -O3 -shared -o NLOFC_spectra_order2.so NLOFC_spectra_order2.c -lm -fopenmp -fPIC
+        gcc -O3 -shared -o NLOFC_spectra_order3.so NLOFC_spectra_order3.c -lm -fopenmp -fPIC
         """
     )
 
 ############################################################################################
 #
-#   Declaring the function pol2_a2
+#   Declaring the function pol3
 #
 ############################################################################################
 
-lib.calculate_pol2_total.argtypes = (
+lib.calculate_pol3_total.argtypes = (
     POINTER(Molecule),
     POINTER(Parameters)
 )
-lib.calculate_pol2_total.restype = None
+lib.calculate_pol3_total.restype = None
 
 
-def get_pol2_total(mol, params):
-    return lib.calculate_pol2_total(
+def get_pol3_total(mol, params):
+    return lib.calculate_pol3_total(
         mol,
         params
     )
