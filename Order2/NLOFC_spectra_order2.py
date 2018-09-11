@@ -29,8 +29,8 @@ class NonLinearResponse2ndOrder:
         self.chi_iterator = np.zeros((8, 4))
         self.iter = 0
         mods = list(product(*(2 * [[self.omega_M1, self.omega_M2]])))
-        del mods[0]
-        del mods[-1]
+        # del mods[0]
+        # del mods[-1]
 
         # for mod_p, mod_q in permutations([self.omega_M1, self.omega_M2], 2):
         for mod_p, mod_q in mods:
@@ -51,13 +51,13 @@ class NonLinearResponse2ndOrder:
         N_comb = self.comb_size
         N_res = self.resolution_size
 
-        w0_pol3 = (omega_M1 + omega_M2) + self.central_freq
+        w0_pol3 = (omega_M2 + omega_M2) + self.central_freq
         w0_field1 = 2 * omega_M1 + self.central_freq
         w0_field2 = 2 * omega_M2 + self.central_freq
 
-        self.frequency = w0_pol3 + np.linspace(-N_comb * self.delta_freq, N_comb * self.delta_freq, N_comb + 1)[:, np.newaxis] #+ np.linspace(-0.3 * self.delta_freq, 0.3 * self.delta_freq, N_res)
-        self.field_freq1 = w0_field1 + np.linspace(-N_comb * self.delta_freq, N_comb * self.delta_freq, N_comb + 1)[:, np.newaxis] #+ np.linspace(-0.3 * self.delta_freq, 0.3 * self.delta_freq, N_res)
-        self.field_freq2 = w0_field2 + np.linspace(-N_comb * self.delta_freq, N_comb * self.delta_freq, N_comb + 1)[:, np.newaxis] #+ np.linspace(-0.3 * self.delta_freq, 0.3 * self.delta_freq, N_res)
+        self.frequency = w0_pol3 + np.linspace(-N_comb * self.delta_freq, N_comb * self.delta_freq, N_comb + 1)[:, np.newaxis] + np.linspace(-0.3 * self.delta_freq, 0.3 * self.delta_freq, N_res)
+        self.field_freq1 = w0_field1 + np.linspace(-N_comb * self.delta_freq, N_comb * self.delta_freq, N_comb + 1)[:, np.newaxis] + np.linspace(-0.3 * self.delta_freq, 0.3 * self.delta_freq, N_res)
+        self.field_freq2 = w0_field2 + np.linspace(-N_comb * self.delta_freq, N_comb * self.delta_freq, N_comb + 1)[:, np.newaxis] + np.linspace(-0.3 * self.delta_freq, 0.3 * self.delta_freq, N_res)
 
         self.frequency = self.frequency.flatten()
         self.field_freq1 = self.field_freq1.flatten()
@@ -145,58 +145,96 @@ if __name__ == "__main__":
         omega_M2=.75*0.5,
         comb_lw=5e-10,
         delta_freq=.5,
-        N_terms=5
+        N_terms=3
     )
+
+    def render_ticks(axes, axes_field):
+        axes.get_xaxis().set_tick_params(which='both', direction='in', width=1, labelrotation=0, labelsize='large')
+        axes.get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='r', labelsize='large')
+        axes_field.get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='b', labelsize='large')
+        axes.get_xaxis().set_ticks_position('both')
+        axes.get_yaxis().set_ticks_position('both')
+        axes_field.get_yaxis().set_ticks_position('both')
 
     System = NonLinearResponse2ndOrder(**parameters)
     System.get_polarization_2nd_order()
-    System1 = NonLinearResponse2ndOrder(**parameters)
-    System1.energies = energies_B
-    System1.get_polarization_2nd_order()
+    real_max = np.abs(System.pol2.real).max()
+    imag_max = np.abs(System.pol2.imag).max()
+    # System1 = NonLinearResponse2ndOrder(**parameters)
+    # System1.energies = energies_B
+    # System1.get_polarization_2nd_order()
+    # real_max = max(np.abs(System.pol2.real).max(), np.abs(System1.pol2.real).max())
+    # imag_max = max(np.abs(System.pol2.imag).max(), np.abs(System1.pol2.imag).max())
+    z_indx = [int(System.frequency.size*(1/2 + 1 /128)), int(System.frequency.size*(33/64))]
+    print(z_indx[0], z_indx[1])
+    # ---------------------------------------------------------------------------------------------------------------- #
+    #                               PLOTS OF SECOND ORDER NON-LINEAR RESPONSE                                          #
+    # ---------------------------------------------------------------------------------------------------------------- #
 
-    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
-    axes[0].set_title("Real part of $2^{nd}$ order non-linear response")
-    axes[1].set_title("Imaginary part of $2^{nd}$ order non-linear response")
-
-    axes[0].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol2.real, 'r')
-    axes[0].plot((System.frequency - System.central_freq) / System.delta_freq, System1.pol2.real, 'b-')
-    axes[1].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol2.imag, 'r')
-    axes[1].plot((System.frequency - System.central_freq) / System.delta_freq, System1.pol2.imag, 'b--')
-    axes_field = axes[0].twinx()
-    axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'g', alpha=0.5)
-    axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'y', alpha=0.5)
-
-    axes[0].get_xaxis().set_tick_params(which='both', direction='in', width=1)
-    axes[0].get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='r', labelsize='large')
-    axes_field.get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='b', labelsize='large')
-    axes[0].get_xaxis().set_ticks_position('both')
-    axes[0].get_yaxis().set_ticks_position('both')
-    axes_field.get_yaxis().set_ticks_position('both')
-    real_max = max(np.abs(System.pol2.real).max(), np.abs(System1.pol2.real).max())
-    imag_max = max(np.abs(System.pol2.imag).max(), np.abs(System1.pol2.imag).max())
-    axes[0].set_ylim(-1.1*real_max, 1.1*real_max)
-    axes[1].set_ylim(-1.1*imag_max, 1.1*imag_max)
-    axes_field.set_ylim(-1.1*np.abs(System.field1).max(), 1.1*np.abs(System.field1).max())
-    axes[0].grid(color='b', linestyle=':', linewidth=0.5)
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    axes[0, 0].set_title("Real part of $2^{nd}$ order non-linear response")
+    axes[0, 0].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol2.real, 'k')
+    # axes[0, 0].plot((System.frequency - System.central_freq) / System.delta_freq, System1.pol2.real, 'b')
+    axes[0, 0].set_ylim(-1.1 * real_max, 1.1 * real_max)
+    axes[0, 0].grid(color='b', linestyle=':', linewidth=0.5)
+    axes[0, 0].set_ylabel("$2^{nd}$-order polarization $P^{(2)}(\\omega)$ (arb. units)")
+    axes_field = axes[0, 0].twinx()
+    axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'r', alpha=0.5,
+                    linewidth=2.)
+    axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'b', alpha=0.5,
+                    linewidth=2.)
+    render_ticks(axes[0, 0])
+    axes_field.set_ylim(-1.1 * np.abs(System.field1).max(), 1.1 * np.abs(System.field1).max())
+    axes_field.set_ylabel("Electric field $E(\\omega)$ (arb. units)")
     axes_field.grid(color='b', linestyle=':', linewidth=0.5)
-    axes[1].set_xlabel("$(\\omega - \\omega_{20}^A) / {\\Delta \\omega}$", size="large")
-    axes[0].set_ylabel("$2^{nd}$-order polarization $P^{(2)}(\\omega)$ (arb. units)")
-    axes[1].set_ylabel("$2^{nd}$-order polarization $P^{(2)}(\\omega)$ (arb. units)")
+
+    axes[1, 0].set_title("Imaginary part of $2^{nd}$ order non-linear response")
+    axes[1, 0].plot((System.frequency - System.central_freq) / System.delta_freq, System.pol2.imag, 'k')
+    # axes[1, 0].plot((System.frequency - System.central_freq) / System.delta_freq, System1.pol2.imag, 'b')
+    axes[1, 0].set_ylim(-1.1 * imag_max, 1.1 * imag_max)
+    axes[1, 0].grid(color='b', linestyle=':', linewidth=0.5)
+    axes[1, 0].set_xlabel("$(\\omega - \\omega_{20}^A) / {\\Delta \\omega}$", size="large")
+    axes[1, 0].set_ylabel("$2^{nd}$-order polarization $P^{(2)}(\\omega)$ (arb. units)")
+    axes_field = axes[1, 0].twinx()
+    axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'r', alpha=0.5,
+                    linewidth=2.)
+    axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'b', alpha=0.5,
+                    linewidth=2.)
+    render_ticks(axes[1, 0], axes_field)
+    axes_field.set_ylim(-1.1 * np.abs(System.field1).max(), 1.1 * np.abs(System.field1).max())
     axes_field.set_ylabel("Electric field $E(\\omega)$ (arb. units)")
+    axes_field.grid(color='b', linestyle=':', linewidth=0.5)
 
-    axes_field = axes[1].twinx()
+    axes[0, 1].set_title("Real part of $2^{nd}$ order non-linear response (Zoomed-in)")
+    axes[0, 1].plot((System.frequency[z_indx[0]:z_indx[1]] - System.central_freq) / System.delta_freq, System.pol2.real[z_indx[0]:z_indx[1]], 'k')
+    # axes[0, 0].plot((System.frequency - System.central_freq) / System.delta_freq, System1.pol2.real, 'b')
+    # axes[0, 1].set_ylim(-1.1 * real_max, 1.1 * real_max)
+    axes[0, 1].grid(color='b', linestyle=':', linewidth=0.5)
+    axes[0, 1].set_ylabel("$2^{nd}$-order polarization $P^{(2)}(\\omega)$ (arb. units)")
+    axes_field = axes[0, 1].twinx()
+    axes_field.plot((System.field_freq1[z_indx[0]:z_indx[1]] - System.central_freq) / System.delta_freq, System.field1[z_indx[0]:z_indx[1]], 'r', alpha=0.5,
+                    linewidth=2.)
+    axes_field.plot((System.field_freq2[z_indx[0]:z_indx[1]] - System.central_freq) / System.delta_freq, System.field2[z_indx[0]:z_indx[1]], 'b', alpha=0.5,
+                    linewidth=2.)
+    render_ticks(axes[0, 1])
+    # axes_field.set_ylim(-1.1 * np.abs(System.field1).max(), 1.1 * np.abs(System.field1).max())
     axes_field.set_ylabel("Electric field $E(\\omega)$ (arb. units)")
+    axes_field.grid(color='b', linestyle=':', linewidth=0.5)
 
-    axes_field.plot((System.field_freq1 - System.central_freq) / System.delta_freq, System.field1, 'g', alpha=0.5)
-    axes_field.plot((System.field_freq2 - System.central_freq) / System.delta_freq, System.field2, 'y', alpha=0.5)
-
-    axes[1].get_xaxis().set_tick_params(which='both', direction='in', width=1, labelrotation=0, labelsize='large')
-    axes[1].get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='r', labelsize='large')
-    axes_field.get_yaxis().set_tick_params(which='both', direction='in', width=1, labelcolor='b', labelsize='large')
-    axes[1].get_xaxis().set_ticks_position('both')
-    axes[1].get_yaxis().set_ticks_position('both')
-    axes_field.get_yaxis().set_ticks_position('both')
-    axes_field.set_ylim(-1.1*np.abs(System.field1).max(), 1.1*np.abs(System.field1).max())
-    axes[1].grid(color='b', linestyle=':', linewidth=0.5)
+    axes[1, 1].set_title("Imaginary part of $2^{nd}$ order non-linear response")
+    axes[1, 1].plot((System.frequency[z_indx[0]:z_indx[1]] - System.central_freq) / System.delta_freq, System.pol2.imag[z_indx[0]:z_indx[1]], 'k')
+    # axes[1, 1].plot((System.frequency - System.central_freq) / System.delta_freq, System1.pol2.imag, 'b')
+    # axes[1, 1].set_ylim(-1.1 * imag_max, 1.1 * imag_max)
+    axes[1, 1].grid(color='b', linestyle=':', linewidth=0.5)
+    axes[1, 1].set_xlabel("$(\\omega - \\omega_{20}^A) / {\\Delta \\omega}$", size="large")
+    axes[1, 1].set_ylabel("$2^{nd}$-order polarization $P^{(2)}(\\omega)$ (arb. units)")
+    axes_field = axes[1, 1].twinx()
+    axes_field.plot((System.field_freq1[z_indx[0]:z_indx[1]] - System.central_freq) / System.delta_freq, System.field1[z_indx[0]:z_indx[1]], 'r', alpha=0.5,
+                    linewidth=2.)
+    axes_field.plot((System.field_freq2[z_indx[0]:z_indx[1]] - System.central_freq) / System.delta_freq, System.field2[z_indx[0]:z_indx[1]], 'b', alpha=0.5,
+                    linewidth=2.)
+    render_ticks(axes[1, 1], axes_field)
+    # axes_field.set_ylim(-1.1 * np.abs(System.field1).max(), 1.1 * np.abs(System.field1).max())
+    axes_field.set_ylabel("Electric field $E(\\omega)$ (arb. units)")
     axes_field.grid(color='b', linestyle=':', linewidth=0.5)
     plt.show()
